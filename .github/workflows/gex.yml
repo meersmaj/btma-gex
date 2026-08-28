@@ -1,0 +1,40 @@
+name: BTMA gamma levels
+
+on:
+  schedule:
+    # 11:15 UTC = 6:15 AM CT, weekdays. Runs after OCC publishes settled open
+    # interest and ~75 min before the 7:30 AM CT morning brief reads the file.
+    - cron: "15 11 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  gex:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Log feed schema (diagnostic)
+        run: python3 gex.py --schema
+
+      - name: Compute gamma levels
+        run: python3 gex.py --out out/gex-latest.json
+
+      - name: Archive a dated copy
+        run: |
+          mkdir -p out/history
+          cp out/gex-latest.json "out/history/$(date -u +%Y-%m-%d).json"
+
+      - name: Commit
+        run: |
+          git config user.name  "btma-gex"
+          git config user.email "btma-gex@users.noreply.github.com"
+          git add out/
+          git diff --staged --quiet || git commit -m "gex: $(date -u +%Y-%m-%d)"
+          git push
