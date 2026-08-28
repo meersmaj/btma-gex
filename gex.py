@@ -120,6 +120,12 @@ def gamma_flip(contracts, spot):
 
 
 def walls(contracts, spot):
+    """Heaviest call gamma AT OR ABOVE spot, heaviest put gamma AT OR BELOW.
+
+    The side constraint matters: without it both walls collapse onto whatever
+    big round strike carries the most open interest, which tells you nothing
+    about where resistance and support actually sit.
+    """
     lo, hi = spot * (1 - BAND), spot * (1 + BAND)
     call, put = {}, {}
     for c in contracts:
@@ -127,8 +133,10 @@ def walls(contracts, spot):
             continue
         g = bs_gamma(spot, c["K"], c["T"], c["iv"])
         dollars = g * c["oi"] * MULT * spot * spot * 0.01
-        (call if c["is_call"] else put).setdefault(c["K"], 0.0)
-        (call if c["is_call"] else put)[c["K"]] += dollars
+        if c["is_call"] and c["K"] >= spot:
+            call[c["K"]] = call.get(c["K"], 0.0) + dollars
+        elif not c["is_call"] and c["K"] <= spot:
+            put[c["K"]] = put.get(c["K"], 0.0) + dollars
     cw = max(call.items(), key=lambda kv: kv[1], default=(None, 0.0))
     pw = max(put.items(), key=lambda kv: kv[1], default=(None, 0.0))
     return (cw[0], cw[1]), (pw[0], pw[1])
