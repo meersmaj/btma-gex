@@ -1,0 +1,38 @@
+{
+  "generated_utc": "2026-11-18T19:24:24+00:00",
+  "generated_et": "2026-11-18T14:24:24-05:00",
+  "feed_timestamp": "2026-11-18 19:23:34",
+  "underlying": "SPX",
+  "spot": 7321.2798,
+  "spot_source": "current_price",
+  "front_expiry": "2026-11-18",
+  "regime_all_expiries": {
+    "label": "all expiries",
+    "contracts": 20871,
+    "total_oi": 22963002,
+    "net_gex_per_1pct": -113819391346,
+    "net_gex_billions": -113.819,
+    "regime": "negative",
+    "gamma_flip": 7545.8,
+    "spot_vs_flip": -224.6,
+    "call_wall": 7400.0,
+    "call_wall_gex": 6208295666,
+    "put_wall": 7000.0,
+    "put_wall_gex": 34036854853
+  },
+  "front_expiry_only": {
+    "label": "0DTE (2026-11-18)",
+    "contracts": 367,
+    "total_oi": 428096,
+    "net_gex_per_1pct": -11108289209,
+    "net_gex_billions": -11.108,
+    "regime": "negative",
+    "gamma_flip": 7391.7,
+    "spot_vs_flip": -70.4,
+    "call_wall": 7350.0,
+    "call_wall_gex": 1066466834,
+    "put_wall": 7310.0,
+    "put_wall_gex": 2553495655
+  },
+  "convention": "dealers long calls / short puts; r=q=0; $ per 1% move"
+}
