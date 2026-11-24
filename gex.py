@@ -19,7 +19,7 @@ Usage:
   python3 gex.py --fixture f.json   # run against a saved chain (testing)
   python3 gex.py --schema           # print what the feed actually returned
 """
-import argparse, datetime as dt, json, math, re, sys, urllib.request, zoneinfo
+import argparse, datetime as dt, json, math, re, sys, urllib.error, urllib.request, zoneinfo
 
 FEEDS = {
     "SPX": "https://cdn.cboe.com/api/global/delayed_quotes/options/_SPX.json",
@@ -35,9 +35,34 @@ def load(url, fixture=None):
     if fixture:
         with open(fixture) as fh:
             return json.load(fh)
-    req = urllib.request.Request(url, headers={"User-Agent": "btma-gex/1.0"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.loads(r.read().decode())
+    # Since 2026-11-20 the CDN answers the old bare "btma-gex/1.0" UA with a
+    # 302 to a page that 403s. Send the headers the cboe.com quote page sends.
+    req = urllib.request.Request(url, headers={
+        "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/131.0 Safari/537.36"),
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.cboe.com/",
+        "Origin": "https://www.cboe.com",
+    })
+    hops = []
+
+    class Trace(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, rq, fp, code, msg, hdrs, newurl):
+            hops.append(f"{code} -> {newurl}")
+            return super().redirect_request(rq, fp, code, msg, hdrs, newurl)
+
+    opener = urllib.request.build_opener(Trace)
+    try:
+        with opener.open(req, timeout=120) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        body = e.read()[:300].decode(errors="replace")
+        raise SystemExit(f"feed fetch failed: HTTP {e.code} at {e.url}\n"
+                         f"redirects: {hops or 'none'}\n"
+                         f"server: {e.headers.get('Server')}\n"
+                         f"body: {body}")
 
 
 def spot_from(data):
